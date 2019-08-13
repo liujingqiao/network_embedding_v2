@@ -16,7 +16,6 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=1024, help='batch size.')
     parser.add_argument('--epoch', type=int, default=1000, help='Number of epochs.')
     parser.add_argument('--emb_dim', type=int, default=256, help='Number of epochs.')
-    parser.add_argument('--attr_hidden', type=list, default=[512, 256], help='Number of epochs.')
-    parser.add_argument('--stru_hidden', type=list, default=[512, 256], help='Number of epochs.')
+    parser.add_argument('--hidden_size', type=list, default=[512, 256], help='Number of epochs.')
     return parser.parse_args()
 
