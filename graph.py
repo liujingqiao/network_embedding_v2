@@ -18,7 +18,8 @@ class Graph:
                 node2idx[node] = i
                 idx2node[i] = node
                 i = i + 1
-        return node2idx, idx2node
+        self.node2idx = node2idx
+        self.idx2node = idx2node
 
     def load_edgelist(self, filename):
         edges, nodes = [], set()
@@ -69,22 +70,22 @@ class Graph:
                     node, attr = self.node2idx[line[0]], list(map(int, line[1:]))
                     attrs[node] = attr
             return attrs
+        if type == 2:
+            node_attr, attr2idx, i = {}, {}, 0
+            with open(filename, 'r') as fr:
+                for line in fr:
+                    line = line.split()
+                    for attr in line[1:]:
+                        if attr not in attr2idx:
+                            attr2idx[attr] = i
+                            i += 1
+                    node_attr[self.node2idx[line[0]]] = [attr2idx[attr] for attr in line[1:]]
 
-        node_attr, attr2idx, i = {}, {}, 0
-        with open(filename, 'r') as fr:
-            for line in fr:
-                line = line.split()
-                for attr in line[1:]:
-                    if attr not in attr2idx:
-                        attr2idx[attr] = i
-                        i += 1
-                node_attr[self.node2idx[line[0]]] = [attr2idx[attr] for attr in line[1:]]
-
-        node_attr_matrix = np.zeros((len(self.node2idx), len(attr2idx)))
-        for item in node_attr.items():
-            for attr in item[0]:
-                node_attr_matrix[item[0]][attr] = 1
-        self.attributes = node_attr_matrix
+            node_attr_matrix = np.zeros((len(self.node2idx), len(attr2idx)))
+            for item in node_attr.items():
+                for attr in item[0]:
+                    node_attr_matrix[item[0]][attr] = 1
+            self.attributes = node_attr_matrix
         return self
 
 

@@ -2,20 +2,17 @@ from pre_train import PreTraining
 import numpy as np
 import utils
 import evaluate
-import math
 import tensorflow as tf
 from tensorflow.python.keras import Input, Model
 from tensorflow.python.keras.layers import Dense, Embedding, Conv2D, MaxPool2D, AveragePooling2D, LSTMCell, RNN, BatchNormalization
 from tensorflow.python.keras.optimizers import Adam
 from tensorflow.python.keras.initializers import RandomNormal
-from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
-from gensim.models import Word2Vec
 from scipy import stats
 
 
 class Interactive:
-    def __init__(self, args, graph):
+    def __init__(self, graph, args):
         self.args = args
         self.classes_path = args.classes_input
         self.edges_path = args.edges_list
@@ -30,8 +27,8 @@ class Interactive:
     def init_embedding(self):
         embedding = dict()
         pre_train = PreTraining(self.graph, self.args)
-        embedding['walk'] = pre_train.walk_embedding(trained=True)
 
+        embedding['walk'] = pre_train.walk_training(trained=True)
         return embedding
 
     def create_model(self, embedding, types, seed=6):
@@ -90,8 +87,8 @@ class Interactive:
             patient, best_score = 0, 0
             for epoch in range(1000):
                 generator = utils.batch_iter(x_trn, self.batch_size)
-                for start, end in generator:
-                    model.train_on_batch([x_trn[start:end]], np.eye(types)[y_trn[start:end]])
+                for index in generator:
+                    model.train_on_batch([x_trn[index]], np.eye(types)[y_trn[index]])
                 y_val_pred = np.argmax(model.predict([x_val]), -1)
 
                 micro, macro = evaluate.f1(y_val, y_val_pred)
