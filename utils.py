@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def random_walk(adj, repeat=100, walk_length=15):
+def random_walk(adj, repeat=100, walk_length=40):
     """
     :param adj: 接收一个邻接矩阵
     :param repeat: 每个顶点重复游走的次数

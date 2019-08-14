@@ -31,7 +31,7 @@ class Interactive:
         embedding['walk'] = pre_train.walk_training(trained=True)
         return embedding
 
-    def create_model(self, embedding, types, seed=6):
+    def create_model(self, embedding, types, seed=42):
         vi = Input(shape=(), dtype=tf.int32)
         seed = RandomNormal(mean=0.0, stddev=0.05, seed=seed)
 
@@ -61,6 +61,10 @@ class Interactive:
                 inter2 = tf.concat([inter2, conv], axis=1)
 
         # Merge different ways of nteraction
+        # inter3 = tf.concat([walk_emb(vi)], axis=1)
+        # attention = Dense(concat.shape[1], activation='softmax', kernel_initializer=seed)(inter3)
+        # inter3 = inter3*attention
+
         output = tf.concat([inter1, inter2], axis=1)
         output = Dense(types, activation='softmax', kernel_initializer=seed)(output)
 

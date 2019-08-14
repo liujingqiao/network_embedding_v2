@@ -22,13 +22,16 @@ class Graph:
         self.idx2node = idx2node
 
     def load_edgelist(self, filename):
-        edges, nodes = [], set()
+        edges, nodes = [], []
         with open(filename, 'r') as fr:
             for line in fr:
                 line = line.split()
                 edges.append(line)
-                nodes = nodes.union(line)
-        self.nodes = np.array(list(nodes))
+                if line[0] not in nodes:
+                    nodes.append(line[0])
+                if line[1] not in nodes:
+                    nodes.append(line[1])
+        self.nodes = np.array(nodes)
         self.edges = np.array(edges)
         self.indexed_node()
         return self

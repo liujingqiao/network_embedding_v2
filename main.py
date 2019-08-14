@@ -12,7 +12,8 @@ if __name__ == '__main__':
     edges_path = args.edges_list
     graph = Graph()
     graph.load_edgelist(edges_path)
+    score = 0
     pre_train = PreTraining(graph, args)
-    pre_train.walk_training(trained=False, repeat=100, walk_length=40)
+    pre_train.walk_training(trained=True, repeat=100, walk_length=40)
     interactive = Interactive(graph, args)
     interactive.train()
