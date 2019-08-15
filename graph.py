@@ -91,4 +91,24 @@ class Graph:
             self.attributes = node_attr_matrix
         return self
 
-
+    def sampled_link(self, sample_rate=5):
+        # 正样本
+        links_list = self.edges
+        label = np.ones((len(links_list),1))
+        # 负采样
+        adj = self.make_adj()
+        for i in range(len(self.edges)):
+            vi = links_list[i][0]
+            # 每个正样本对应采样sample_rate个负样本
+            for j in range(sample_rate):
+                nag = np.argwhere(adj[vi] == 1).reshape(-1)
+                if len(nag) == 0:
+                    break
+                adj[vi][vj] = 1
+                vj = nag[np.random.randint(len(nag))]
+                np.append(links_list, [vi, vj], axis=0)
+                np.append(label, [-1], axis=0)
+        shuffle_index = np.random.permutation(np.arange(len(links_list)))
+        links_list = links_list[shuffle_index]
+        label = label[shuffle_index]
+        return links_list, label

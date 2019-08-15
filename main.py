@@ -1,4 +1,3 @@
-import networkx as nx
 from graph import Graph
 from args import parse_args
 from pre_train import PreTraining
@@ -14,6 +13,8 @@ if __name__ == '__main__':
     graph.load_edgelist(edges_path)
     score = 0
     pre_train = PreTraining(graph, args)
-    pre_train.walk_training(trained=True, repeat=100, walk_length=40)
+    pre_train.walk_proximity(trained=True, repeat=100, walk_length=40)
+    pre_train.structure_proximity(trained=True)
+    pre_train.structure_proximity(trained=False)
     interactive = Interactive(graph, args)
     interactive.train()

@@ -17,10 +17,25 @@ def f1(y_true, y_pred):
 def loss_autoencoder(y_true, y_pred):
     # y_true = tf.reshape(y_true, shape=[-1])
     # y_pred = tf.reshape(y_pred, shape=[-1])
-    beta, eps = 20, 0.00001
+    beta, eps = 10, 0.00001
     label_smoothing = 0.01
     y_true = y_true * (beta - label_smoothing) + 0.5 * label_smoothing
     y_pred = y_pred + eps
     loss = -tf.reduce_mean(y_true*tf.log(y_pred))
     loss = binary_crossentropy(y_true,y_pred)
+    return loss
+
+def recontruction(data, adj):
+    data = np.array(data)
+    y_true, y_pred = None, None
+    if len(np.shape(data)) > 1:
+        y_pred = data.reshape(-1)
+        y_true = adj.reshape(-1)
+    score = roc_auc_score(y_true, y_pred)
+    print("recontruction auc score : {}".format(score))
+    return score
+
+def first_order_loss(y_true, y_pred):
+    y_true = np.where(y_true==1, 5, -1)
+    loss = K.sum(y_true*K.log(y_pred))
     return loss
