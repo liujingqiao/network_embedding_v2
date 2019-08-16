@@ -4,6 +4,12 @@ from pre_train import PreTraining
 from interactive import Interactive
 
 
+def train(walk=False, struc=False, link=False, attr=False):
+    pre_train = PreTraining(graph, args)
+    pre_train.walk_proximity(trained=walk, repeat=200, walk_length=50)
+    pre_train.structure_proximity(trained=struc)
+    pre_train.link_proximity(trained=link)
+    pre_train.attributes_proximity(trained=attr)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -11,10 +17,6 @@ if __name__ == '__main__':
     edges_path = args.edges_list
     graph = Graph()
     graph.load_edgelist(edges_path)
-    score = 0
-    pre_train = PreTraining(graph, args)
-    pre_train.walk_proximity(trained=True, repeat=100, walk_length=40)
-    pre_train.structure_proximity(trained=True)
-    pre_train.link_proximity(trained=True)
+    train(walk=False, struc=True, link=True, attr=True)
     interactive = Interactive(graph, args)
     interactive.train()

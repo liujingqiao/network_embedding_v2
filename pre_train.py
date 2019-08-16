@@ -16,6 +16,7 @@ class PreTraining:
     def __init__(self, graph, args):
         self.args = args
         self.edges_path = args.edges_list
+        self.attr_path = args.attr_input
         self.hidden_size = args.hidden_size
         self.walk_embedding = args.walk_embedding
 
@@ -25,6 +26,9 @@ class PreTraining:
         self.structure = None
         self.emb_dim = args.emb_dim
         self.emb_size = len(graph.nodes)
+
+        graph.load_attribute(self.attr_path, types=1)
+        self.attributes = graph.attributes
 
     def walk_proximity(self, repeat=100, walk_length=40, trained=False, types=1):
         """
@@ -38,8 +42,9 @@ class PreTraining:
             return np.loadtxt(self.walk_embedding)
         corpus = None
         if types == 1:
-            corpus = utils.random_walk(self.adjacency, repeat, walk_length)
-        model = Word2Vec(corpus, size=self.emb_dim, window=10, min_count=0, workers=6)
+            corpus = utils.random_walk_parallel(self.adjacency, repeat, walk_length, num_proceeding=15)
+        print('已经游走完成..')
+        model = Word2Vec(corpus, size=self.emb_dim, window=10, min_count=0, workers=15)
 
         embedding = np.zeros((self.emb_size, self.emb_dim))
         for i in range(self.emb_size):
@@ -50,6 +55,13 @@ class PreTraining:
         if trained:
             return np.loadtxt(self.args.stru_embedding)
         auto_encoder = AutoEncoder(self.args, self.adjacency, self.args.stru_embedding)
+        auto_encoder.train()
+        return auto_encoder.embedding()
+
+    def attributes_proximity(self, trained=True):
+        if trained:
+            return np.loadtxt(self.args.attr_embedding)
+        auto_encoder = AutoEncoder(self.args, self.attributes, self.args.attr_embedding)
         auto_encoder.train()
         return auto_encoder.embedding()
 
@@ -115,7 +127,7 @@ class AutoEncoder(object):
 
                 # save best reconsitution model and embedding model
                 score, best_score, patient = self.save_best_model(best_score, x_test, patient)
-                if (patient > 20 and best_score > 0.7) or patient > 50:
+                if (patient > 25 and best_score > 0.7) or patient > 50:
                     break
                 print("epoch:{}, score:{}".format(epoch + 1, score))
 

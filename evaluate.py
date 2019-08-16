@@ -18,7 +18,7 @@ def f1(y_true, y_pred):
 def loss_autoencoder(y_true, y_pred):
     # y_true = tf.reshape(y_true, shape=[-1])
     # y_pred = tf.reshape(y_pred, shape=[-1])
-    beta, eps = 10, 0.00001
+    beta, eps = 20, 0.00001
     label_smoothing = 0.01
     y_true = y_true * (beta - label_smoothing) + 0.5 * label_smoothing
     y_pred = y_pred + eps

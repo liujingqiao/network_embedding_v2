@@ -1,7 +1,8 @@
 import numpy as np
+import multiprocessing
 
 
-def random_walk(adj, repeat=100, walk_length=40):
+def random_walk(start, end, adj, repeat=100, walk_length=40):
     """
     :param adj: 接收一个邻接矩阵
     :param repeat: 每个顶点重复游走的次数
@@ -10,7 +11,7 @@ def random_walk(adj, repeat=100, walk_length=40):
     """
     walk_list = []
     for _ in range(repeat):
-        for i in range(len(adj)):
+        for i in range(start, end):
             cur = i
             context = [cur]
             for _ in range(walk_length - 1):
@@ -23,6 +24,25 @@ def random_walk(adj, repeat=100, walk_length=40):
                     context.extend([len(adj)] * (walk_length - len(context)))
             walk_list.append(list(map(str, context)))
     return walk_list
+
+
+def random_walk_parallel(adj, repeat=100, walk_length=40, num_proceeding=10):
+    proceeding = []
+    num_nodes = int(len(adj)/num_proceeding)
+    block = []
+    for i in range(num_proceeding - 1):
+        block.append((int(i*num_nodes), int((i+1)*num_nodes)))
+    block.append((int((num_proceeding-1)*num_nodes), len(adj)))
+    pool = multiprocessing.Pool(processes=num_proceeding)
+    for i, (start, end) in enumerate(block):
+        proceeding.append(pool.apply_async(random_walk, (start, end, adj, repeat, walk_length)))
+    pool.close()
+    pool.join()
+    corpus = []
+    for p in proceeding:
+        corpus.extend(p.get())
+    return corpus
+
 
 
 def batch_iter(data, batch_size, shuffle=True, seed=None):

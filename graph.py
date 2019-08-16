@@ -62,7 +62,7 @@ class Graph:
                 adj[e0][e1] = 1
         return adj
 
-    def load_attributes(self, filename, types=1):
+    def load_attribute(self, filename, types=1):
         # 数据格式不同处理方式不同
         if types == 1:
             with open(filename, "r") as fr:
@@ -74,6 +74,7 @@ class Graph:
                     line = line.split()
                     node, attr = self.node2idx[line[0]], list(map(int, line[1:]))
                     attrs[node] = attr
+            self.attributes = attrs
             return attrs
         if type == 2:
             node_attr, attr2idx, i = {}, {}, 0
@@ -91,7 +92,7 @@ class Graph:
                 for attr in item[0]:
                     node_attr_matrix[item[0]][attr] = 1
             self.attributes = node_attr_matrix
-        return self
+            return node_attr_matrix
 
     def sampled_link(self, num_neg=5):
         # 正样本
