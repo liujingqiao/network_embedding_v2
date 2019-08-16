@@ -5,6 +5,7 @@ import utils
 from sklearn.model_selection import train_test_split
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.losses import binary_crossentropy
+from tensorflow.python.ops import math_ops
 import numpy as np
 import tensorflow as tf
 
@@ -25,6 +26,7 @@ def loss_autoencoder(y_true, y_pred):
     loss = binary_crossentropy(y_true,y_pred)
     return loss
 
+
 def recontruction(data, adj):
     data = np.array(data)
     y_true, y_pred = None, None
@@ -35,7 +37,9 @@ def recontruction(data, adj):
     print("recontruction auc score : {}".format(score))
     return score
 
+
 def first_order_loss(y_true, y_pred):
-    y_true = np.where(y_true==1, 5, -1)
-    loss = K.sum(y_true*K.log(y_pred))
+    y_true = math_ops.cast(y_true, y_pred.dtype)
+    b = tf.where(y_true == 1.0, 5.0, 1)
+    loss = K.mean(K.square(y_true - y_pred))
     return loss

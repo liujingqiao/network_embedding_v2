@@ -3,11 +3,12 @@ import utils
 import evaluate
 import tensorflow as tf
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.losses import binary_crossentropy
 from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.layers import Dense, Embedding
+from tensorflow.python.keras.layers import Dense, Embedding, Lambda
 from tensorflow.python.keras.models import load_model
 from tensorflow.python.keras.optimizers import Adam
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.model_selection import KFold
 from gensim.models import Word2Vec
 
@@ -157,7 +158,7 @@ class LinkEmbeddig:
         self.epoch = args.epoch
         self.folds = args.folds
         self.batch_size = args.batch_size
-        self.link_output = args.link_output
+        self.link_output = args.link_embedding
 
         self.emb_dim = args.emb_dim
         self.emb_size = len(graph.nodes)
@@ -167,15 +168,16 @@ class LinkEmbeddig:
         vj = Input(shape=(), dtype=tf.int32)
         link_emb = Embedding(self.emb_size, self.emb_dim)
         vi_emb, vj_emb = link_emb(vi), link_emb(vj)
-        out = K.sigmoid(K.sum(vi_emb * vj_emb))
-        out = Dense(1, activation='sigmoid')(out)
+        #out = K.sum(vi_emb * vj_emb)
+
+        out = Dense(1)(vi_emb * vj_emb)
         model = Model(inputs=[vi, vj], outputs=[out])
         return model, link_emb
 
     def train(self):
-        x_train, y_train = self.graph.sampled_link()
+        x_train, y_train = self.graph.sampled_link(num_neg=3)
 
-        embedding = np.zeros((self.graph.number_of_nodes(), self.emb_dim))
+        embedding = np.zeros((len(self.graph.nodes), self.emb_dim))
         kf = KFold(n_splits=self.folds, shuffle=True)
 
         for fold_n, (train_index, val_index) in enumerate(kf.split(y_train)):
@@ -188,16 +190,16 @@ class LinkEmbeddig:
             x_trn, y_trn = x_train[train_index], y_train[train_index]
             x_val, y_val = x_train[val_index], y_train[val_index]
             # 开始训练
-            patient, best_score = 0, 0
+            patient, best_score = 0, 100000
             for epoch in range(2000):
                 generator = utils.batch_iter(x_trn, self.batch_size)
                 for index in generator:
-                    vi, vj = x_train[index][:, 0], x_trn[index][:, 1]
-                    model.train_on_batch([vi, vj], [y_train[index]])
+                    vi, vj = x_trn[index][:, 0], x_trn[index][:, 1]
+                    model.train_on_batch([vi, vj], [y_trn[index]])
                 y_pred = model.predict([x_val[:, 0], x_val[:, 1]])
-                score = roc_auc_score(y_val, y_pred)
-                print(score)
-                if score > best_score:
+                score = mean_squared_error(y_val, y_pred)
+                print('{}:{}'.format(epoch,score))
+                if score < best_score:
                     patient = 0
                     best_score = score
                     # model.save_weights('../data/output/weights/link')

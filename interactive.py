@@ -41,18 +41,18 @@ class Interactive:
         walk_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['walk']])
         stru_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['stru']])
         # attr_emb = Embedding(self.stru_size, self.attr_dim, trainable=False, weights=[embedding['attr']])
-        link_emb = Embedding(self.stru_size, self.stru_dim, trainable=False, weights=[embedding['link']])
+        link_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['link']])
 
         # Connection Interaction
-        concat = tf.concat([link_emb(vi)], axis=1)
+        concat = tf.concat([walk_emb(vi), stru_emb(vi), link_emb(vi)], axis=1)
         attention = Dense(concat.shape[1], activation='softmax', kernel_initializer=seed)(concat)
         concat = concat*attention
 
         # Convolutional Interaction
-        reshape = tf.reshape(concat, shape=(-1, 1, self.emb_dim))
+        reshape = tf.reshape(concat, shape=(-1, 3, self.emb_dim))
         reshape = tf.expand_dims(reshape, -1)
         inter2 = None
-        for i, size in enumerate([[1, 5], [1, 4],  [1, 2]]):
+        for i, size in enumerate([[3, 5], [3, 4],  [3, 2]]):
             conv = Conv2D(filters=5, kernel_size=size, kernel_initializer=seed)(reshape)
             pool = AveragePooling2D(pool_size=(1, 2))(conv)
             dim = pool.shape[1]*pool.shape[2]*pool.shape[3]
@@ -63,7 +63,7 @@ class Interactive:
                 inter2 = tf.concat([inter2, conv], axis=1)
 
         # Merge different ways of nteraction
-        inter1 = tf.concat([link_emb(vi)], axis=1)
+        inter1 = tf.concat([walk_emb(vi), stru_emb(vi), link_emb(vi)], axis=1)
         attention = Dense(concat.shape[1], activation='softmax', kernel_initializer=seed)(inter1)
         inter1 = inter1*attention
 
@@ -103,7 +103,7 @@ class Interactive:
                     best_score = micro + macro
                     model.save_weights('dataset/output/weights/classifier')
                 patient += 1
-                if patient >= 30:
+                if patient >= 50:
                     break
 
             # 预测

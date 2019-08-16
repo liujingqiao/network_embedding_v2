@@ -20,6 +20,8 @@ class Graph:
                 i = i + 1
         self.node2idx = node2idx
         self.idx2node = idx2node
+        self.nodes = np.array([node2idx[node] for node in self.nodes])
+        self.edges = np.array([[node2idx[edge[0]], node2idx[edge[1]]] for edge in self.edges])
 
     def load_edgelist(self, filename):
         edges, nodes = [], []
@@ -31,8 +33,8 @@ class Graph:
                     nodes.append(line[0])
                 if line[1] not in nodes:
                     nodes.append(line[1])
-        self.nodes = np.array(nodes)
-        self.edges = np.array(edges)
+        self.nodes = nodes
+        self.edges = edges
         self.indexed_node()
         return self
 
@@ -54,10 +56,10 @@ class Graph:
         adj = np.zeros((node_num, node_num))
         lap = np.zeros_like(adj)
         for e0, e1 in self.edges:
-            adj[self.node2idx[e1]][self.node2idx[e0]] = 1
+            adj[e1][e0] = 1
         if not self.is_directed:
             for e0, e1 in self.edges:
-                adj[self.node2idx[e0]][self.node2idx[e1]] = 1
+                adj[e0][e1] = 1
         return adj
 
     def load_attributes(self, filename, types=1):
@@ -91,7 +93,7 @@ class Graph:
             self.attributes = node_attr_matrix
         return self
 
-    def sampled_link(self, sample_rate=5):
+    def sampled_link(self, num_neg=5):
         # 正样本
         links_list = self.edges
         label = np.ones((len(links_list),1))
@@ -100,14 +102,14 @@ class Graph:
         for i in range(len(self.edges)):
             vi = links_list[i][0]
             # 每个正样本对应采样sample_rate个负样本
-            for j in range(sample_rate):
-                nag = np.argwhere(adj[vi] == 1).reshape(-1)
+            for j in range(num_neg):
+                nag = np.argwhere(adj[vi] == 0).reshape(-1)
                 if len(nag) == 0:
                     break
-                adj[vi][vj] = 1
                 vj = nag[np.random.randint(len(nag))]
-                np.append(links_list, [vi, vj], axis=0)
-                np.append(label, [-1], axis=0)
+                adj[vi][vj] = 1
+                links_list = np.append(links_list, [[vi, vj]], axis=0)
+                label = np.append(label, [[-1]], axis=0)
         shuffle_index = np.random.permutation(np.arange(len(links_list)))
         links_list = links_list[shuffle_index]
         label = label[shuffle_index]

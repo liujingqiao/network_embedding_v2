@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument('--walk_embedding', nargs="?", default='dataset/embedding/wiki/walk_embedding.txt', help='walk path')
     parser.add_argument('--walk_length', type=int, default=20, help='walk length')
     parser.add_argument('--folds', type=int, default=5, help='number of folds')
-    parser.add_argument('--batch_size', type=int, default=1024, help='batch size.')
+    parser.add_argument('--batch_size', type=int, default=2048, help='batch size.')
     parser.add_argument('--epoch', type=int, default=1000, help='Number of epochs.')
     parser.add_argument('--emb_dim', type=int, default=256, help='Number of epochs.')
     parser.add_argument('--hidden_size', type=list, default=[512, 256], help='Number of epochs.')
