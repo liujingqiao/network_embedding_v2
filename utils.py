@@ -86,3 +86,64 @@ def train_test_split(data, label, train_size=0.7, seed=None, shuffle=True):
     x_test, y_test = data[train_size:], label[train_size:]
 
     return x_train, y_train, x_test, y_test
+
+
+def create_alias_table(area_ratio):
+    """
+
+    :param area_ratio: sum(area_ratio)=1
+    :return: accept,alias
+    """
+    l = len(area_ratio)
+    accept, alias = [0] * l, [0] * l
+    small, large = [], []
+    area_ratio_ = np.array(area_ratio) * l
+    for i, prob in enumerate(area_ratio_):
+        if prob < 1.0:
+            small.append(i)
+        else:
+            large.append(i)
+
+    while small and large:
+        small_idx, large_idx = small.pop(), large.pop()
+        accept[small_idx] = area_ratio_[small_idx]#小概率的值保存到accept中
+        alias[small_idx] = large_idx#大概率的索引保存到alias中
+        area_ratio_[large_idx] = area_ratio_[large_idx] - \
+            (1 - area_ratio_[small_idx])
+        if area_ratio_[large_idx] < 1.0:
+            small.append(large_idx)
+        else:
+            large.append(large_idx)
+
+    while large:
+        large_idx = large.pop()
+        accept[large_idx] = 1
+    while small:
+        small_idx = small.pop()
+        accept[small_idx] = 1
+
+    return accept, alias
+
+
+def alias_sample(accept, alias):
+    """
+
+    :param accept:
+    :param alias:
+    :return: sample index
+    """
+    # 根据概率选择游走的邻居
+    N = len(accept)
+    i = int(np.random.random()*N)
+    r = np.random.random()
+    if r < accept[i]:
+        return i
+    else:
+        return alias[i]
+
+
+def partition_num(num, workers):
+    if num % workers == 0:
+        return [num//workers]*workers
+    else:
+        return [num//workers]*workers + [num % workers]

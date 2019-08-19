@@ -11,6 +11,8 @@ from tensorflow.python.keras.optimizers import Adam
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.model_selection import KFold
 from gensim.models import Word2Vec
+from walker import RandomWalker
+
 
 class PreTraining:
     def __init__(self, graph, args):
@@ -30,7 +32,7 @@ class PreTraining:
         graph.load_attribute(self.attr_path, types=1)
         self.attributes = graph.attributes
 
-    def walk_proximity(self, repeat=100, walk_length=40, trained=False, types=1):
+    def walk_proximity(self, num_walks=100, walk_length=40, trained=False):
         """
         :param repeat: 每个顶点重复游走的次数
         :param walk_length: 顶点每次游走的长度
@@ -40,11 +42,12 @@ class PreTraining:
         """
         if trained:
             return np.loadtxt(self.walk_embedding)
-        corpus = None
-        if types == 1:
-            corpus = utils.random_walk_parallel(self.adjacency, repeat, walk_length, num_proceeding=15)
+        walker = RandomWalker(self.graph, 1, 1)
+        walker.preprocess_transition_probs()
+        sentences = walker.simulate_walks(num_walks=num_walks, walk_length=walk_length)
         print('已经游走完成..')
-        model = Word2Vec(corpus, size=self.emb_dim, window=10, min_count=0, workers=15)
+
+        model = Word2Vec(sentences, size=self.emb_dim, window=6, min_count=0, workers=15)
 
         embedding = np.zeros((self.emb_size, self.emb_dim))
         for i in range(self.emb_size):

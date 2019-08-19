@@ -70,7 +70,7 @@ class Interactive:
         inter1 = inter1*attention
 
         output = tf.concat([inter1, inter2], axis=1)
-        output = Dense(types, activation='softmax', kernel_initializer=seed)(output)
+        output = Dense(types, activation='softmax', kernel_initializer=seed)(walk_emb(vi))
 
         model = Model(inputs=[vi], outputs=[output])
 

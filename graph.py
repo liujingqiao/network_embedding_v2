@@ -1,16 +1,18 @@
 import numpy as np
 
 
-class Graph:
-    def __init__(self, is_directed=True):
+class Graph(dict):
+    def __init__(self, is_directed=False):
+        dict.__init__(self)
         self.is_directed = is_directed
         self.edges = None
         self.nodes = None
         self.attributes = None
         self.node2idx = None
         self.idx2node = None
+        self.adj = None
 
-    def indexed_node(self):
+    def _indexed_node(self):
         # indexed node
         node2idx, idx2node = {}, {}
         for i, node in enumerate(self.nodes):
@@ -21,21 +23,28 @@ class Graph:
         self.node2idx = node2idx
         self.idx2node = idx2node
         self.nodes = np.array([node2idx[node] for node in self.nodes])
-        self.edges = np.array([[node2idx[edge[0]], node2idx[edge[1]]] for edge in self.edges])
 
     def load_edgelist(self, filename):
-        edges, nodes = [], []
+        nodes = []
         with open(filename, 'r') as fr:
             for line in fr:
                 line = line.split()
-                edges.append(line)
+                # 构建图
+                if line[0] not in self:
+                    self[line[0]] = {}
+                if line[1] not in self:
+                    self[line[1]] = {}
+                self[line[0]][line[1]] = 1
+                if not self.is_directed:
+                    self[line[1]][line[0]] = 1
+                # 保存顶点集合
                 if line[0] not in nodes:
                     nodes.append(line[0])
                 if line[1] not in nodes:
                     nodes.append(line[1])
         self.nodes = nodes
-        self.edges = edges
-        self.indexed_node()
+        self._indexed_node()
+        self._make_adj_edges()
         return self
 
     def load_classes(self, path):
@@ -50,17 +59,22 @@ class Graph:
         types = len(set(classes))
         return np.array(node), np.array(classes), types
 
-    def make_adj(self):
-        # Finding Adjacency Matrix
+    def _make_adj_edges(self):
+        node2idx = self.node2idx
         node_num = len(self.node2idx)
+        edges = []
         adj = np.zeros((node_num, node_num))
-        lap = np.zeros_like(adj)
-        for e0, e1 in self.edges:
-            adj[e1][e0] = 1
-        if not self.is_directed:
-            for e0, e1 in self.edges:
-                adj[e0][e1] = 1
+        for vi, link in self.items():
+            for vj, weight in link.items():
+                i, j = node2idx[vi], node2idx[vj]
+                adj[i][j] = 1
+                edges.append([i, j])
+        self.adj = adj
+        self.edges = edges
         return adj
+
+    def neighbors(self, node):
+        return np.argwhere(self.adj[node] == 1).reshape(-1)
 
     def load_attribute(self, filename, types=1):
         # 数据格式不同处理方式不同
@@ -99,19 +113,24 @@ class Graph:
         links_list = self.edges
         label = np.ones((len(links_list),1))
         # 负采样
-        adj = self.make_adj()
         for i in range(len(self.edges)):
             vi = links_list[i][0]
             # 每个正样本对应采样sample_rate个负样本
             for j in range(num_neg):
-                nag = np.argwhere(adj[vi] == 0).reshape(-1)
+                nag = np.argwhere(self.adj[vi] == 0).reshape(-1)
                 if len(nag) == 0:
                     break
                 vj = nag[np.random.randint(len(nag))]
-                adj[vi][vj] = 1
+                self.adj[vi][vj] = 1
                 links_list = np.append(links_list, [[vi, vj]], axis=0)
                 label = np.append(label, [[-1]], axis=0)
         shuffle_index = np.random.permutation(np.arange(len(links_list)))
         links_list = links_list[shuffle_index]
         label = label[shuffle_index]
         return links_list, label
+
+    def has_edge(self, vi, vj):
+        if self.adj[vi][vj] == 1:
+            return True
+        return False
+
