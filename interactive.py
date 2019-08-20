@@ -32,9 +32,10 @@ class Interactive:
         embedding['stru'] = pre_train.structure_proximity(trained=True)
         embedding['link'] = pre_train.link_proximity(trained=True)
         embedding['attr'] = pre_train.attributes_proximity(trained=True)
+        embedding['walk_struct'] = pre_train.attributes_proximity(trained=True)
         return embedding
 
-    def create_model(self, embedding, types, seed=42):
+    def create_model(self, embedding, types, seed=6):
         vi = Input(shape=(), dtype=tf.int32)
         seed = RandomNormal(mean=0.0, stddev=0.05, seed=seed)
 
@@ -43,17 +44,19 @@ class Interactive:
         stru_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['stru']])
         attr_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['attr']])
         link_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['link']])
+        walk_struct_emb = Embedding(self.emb_size, self.emb_dim, trainable=False, weights=[embedding['walk_struct']])
 
         # Connection Interaction
-        concat = tf.concat([walk_emb(vi)], axis=1)
+        concat = tf.concat([walk_emb(vi),stru_emb(vi),attr_emb(vi),link_emb(vi)], axis=1)
         attention = Dense(concat.shape[1], activation='softmax', kernel_initializer=seed)(concat)
         concat = concat*attention
 
+        shape = 4
         # Convolutional Interaction
-        reshape = tf.reshape(concat, shape=(-1, 1, self.emb_dim))
+        reshape = tf.reshape(concat, shape=(-1, shape, self.emb_dim))
         reshape = tf.expand_dims(reshape, -1)
         inter2 = None
-        for i, size in enumerate([[1, 5], [1, 4],  [1, 2]]):
+        for i, size in enumerate([[shape, 5], [shape, 4], [shape, 2]]):
             conv = Conv2D(filters=5, kernel_size=size, kernel_initializer=seed)(reshape)
             pool = AveragePooling2D(pool_size=(1, 2))(conv)
             dim = pool.shape[1]*pool.shape[2]*pool.shape[3]
@@ -65,12 +68,12 @@ class Interactive:
 
         # Merge different ways of nteraction
         #inter1 = tf.concat([walk_emb(vi), stru_emb(vi), link_emb(vi)], axis=1)
-        inter1 = tf.concat([walk_emb(vi)], axis=1)
-        attention = Dense(concat.shape[1], activation='softmax', kernel_initializer=seed)(inter1)
+        inter1 = tf.concat([walk_emb(vi),stru_emb(vi),attr_emb(vi),link_emb(vi)], axis=1)
+        attention = Dense(inter1.shape[1], activation='softmax', kernel_initializer=seed)(inter1)
         inter1 = inter1*attention
 
         output = tf.concat([inter1, inter2], axis=1)
-        output = Dense(types, activation='softmax', kernel_initializer=seed)(walk_emb(vi))
+        output = Dense(types, activation='softmax', kernel_initializer=seed)(output)
 
         model = Model(inputs=[vi], outputs=[output])
 
@@ -79,9 +82,9 @@ class Interactive:
     def train(self):
         embeddings = self.init_embedding()
         data, label, types = self.graph.load_classes(self.classes_path)
-        x_train, y_train, x_test, y_test = utils.train_test_split(data, label, train_size=0.7, seed=6)
+        x_train, y_train, x_test, y_test = utils.train_test_split(data, label, train_size=0.7, seed=42)
 
-        self.folds = self.args.folds
+        # self.folds = self.args.folds
         self.folds = 3
         kf = KFold(n_splits=self.folds)
         y_preds = np.zeros((len(x_test), self.folds))   # y_preds[i]保存第i轮的测试集预测结果

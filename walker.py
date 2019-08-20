@@ -1,23 +1,23 @@
-import itertools
 import multiprocessing
-import math
+import numpy as np
 import random
 
-from joblib import Parallel, delayed
 
 from utils import alias_sample, create_alias_table, partition_num
 
 
 class RandomWalker:
-    def __init__(self, G, p=1, q=1):
+    def __init__(self, G, p=1, q=1, types=1):
         """
         :param G:
         :param p: Return parameter,controls the likelihood of immediately revisiting a node in the walk.
         :param q: In-out parameter,allows the search to differentiate between “inward” and “outward” nodes
+        :param types: choose word2vec or autoencoder
         """
         self.G = G
         self.p = p
         self.q = q
+        self.types = types
 
 
     def deepwalk_walk(self, walk_length, start_node):
@@ -31,7 +31,7 @@ class RandomWalker:
                 walk.append(random.choice(cur_nbrs))
             else:
                 break
-        return list(map(str,walk))
+        return walk
 
     def node2vec_walk(self, walk_length, start_node):
 
@@ -56,7 +56,7 @@ class RandomWalker:
             else:
                 break
 
-        return list(map(str,walk))
+        return walk
 
     def simulate_walks(self, num_walks=100, walk_length=40, workers=5):
         G = self.G
@@ -71,10 +71,17 @@ class RandomWalker:
             proceeding.append(pool.apply_async(self._simulate_walks, (start, end, num_walks, walk_length)))
         pool.close()
         pool.join()
-        corpus = []
+        if type == 1:
+            corpus = []
+            for p in proceeding:
+                corpus.extend(p.get())
+            return corpus
+
+        walk_structure = np.zeros_like(self.G.adj)
         for p in proceeding:
-            corpus.extend(p.get())
-        return corpus
+            walk_structure += p.get()
+        walk_structure = np.where(walk_structure>0, 1, 0)
+        return  walk_structure
 
     def _simulate_walks(self, start, end, num_walks, walk_length,):
         walks = []
@@ -88,7 +95,16 @@ class RandomWalker:
                 else:
                     walks.append(self.node2vec_walk(
                         walk_length=walk_length, start_node=v))
-        return walks
+
+        if self.types == 1:
+            for i, walk in enumerate(walks):
+                walks[i] = list(map(str, walk))
+            return walks
+
+        walk_structure = np.zeros_like(self.G.adj)
+        for walk in walks:
+            walk_structure[walk[0]][walk[1:]] = 1
+        return np.array(walk_structure)
 
     def get_alias_edge(self, t, v):
         """
