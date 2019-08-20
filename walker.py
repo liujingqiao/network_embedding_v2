@@ -31,7 +31,7 @@ class RandomWalker:
                 walk.append(random.choice(cur_nbrs))
             else:
                 break
-        return walk
+        return list(map(str,walk))
 
     def node2vec_walk(self, walk_length, start_node):
 
@@ -56,17 +56,17 @@ class RandomWalker:
             else:
                 break
 
-        return walk
+        return list(map(str,walk))
 
-    def simulate_walks(self, num_walks=100, walk_length=40, worker=5):
+    def simulate_walks(self, num_walks=100, walk_length=40, workers=5):
         G = self.G
         proceeding = []
-        num_nodes = int(len(G.adj) / worker)
+        num_nodes = int(len(G.adj) / workers)
         block = []
-        for i in range(worker - 1):
+        for i in range(workers - 1):
             block.append((int(i * num_nodes), int((i + 1) * num_nodes)))
-        block.append((int((worker - 1) * num_nodes), len(G.adj)))
-        pool = multiprocessing.Pool(processes=worker)
+        block.append((int((workers - 1) * num_nodes), len(G.adj)))
+        pool = multiprocessing.Pool(processes=workers)
         for i, (start, end) in enumerate(block):
             proceeding.append(pool.apply_async(self._simulate_walks, (start, end, num_walks, walk_length)))
         pool.close()

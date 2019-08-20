@@ -12,18 +12,6 @@ class Graph(dict):
         self.idx2node = None
         self.adj = None
 
-    def _indexed_node(self):
-        # indexed node
-        node2idx, idx2node = {}, {}
-        for i, node in enumerate(self.nodes):
-            if node not in node2idx:
-                node2idx[node] = i
-                idx2node[i] = node
-                i = i + 1
-        self.node2idx = node2idx
-        self.idx2node = idx2node
-        self.nodes = np.array([node2idx[node] for node in self.nodes])
-
     def load_edgelist(self, filename):
         nodes = []
         with open(filename, 'r') as fr:
@@ -72,6 +60,18 @@ class Graph(dict):
         self.adj = adj
         self.edges = edges
         return adj
+
+    def _indexed_node(self):
+        # indexed node
+        node2idx, idx2node = {}, {}
+        for i, node in enumerate(self.nodes):
+            if node not in node2idx:
+                node2idx[node] = i
+                idx2node[i] = node
+                i = i + 1
+        self.node2idx = node2idx
+        self.idx2node = idx2node
+        self.nodes = np.array([node2idx[node] for node in self.nodes])
 
     def neighbors(self, node):
         return np.argwhere(self.adj[node] == 1).reshape(-1)

@@ -24,7 +24,7 @@ class PreTraining:
 
         self.graph = graph
         graph.load_edgelist(self.edges_path)
-        self.adjacency = self.graph.make_adj()
+        self.adjacency = graph.adj
         self.structure = None
         self.emb_dim = args.emb_dim
         self.emb_size = len(graph.nodes)
@@ -44,10 +44,10 @@ class PreTraining:
             return np.loadtxt(self.walk_embedding)
         walker = RandomWalker(self.graph, 1, 1)
         walker.preprocess_transition_probs()
-        sentences = walker.simulate_walks(num_walks=num_walks, walk_length=walk_length)
+        sentences = walker.simulate_walks(num_walks=num_walks, walk_length=walk_length, workers=6)
         print('已经游走完成..')
 
-        model = Word2Vec(sentences, size=self.emb_dim, window=6, min_count=0, workers=15)
+        model = Word2Vec(sentences, size=self.emb_dim, window=5, min_count=0, workers=6)
 
         embedding = np.zeros((self.emb_size, self.emb_dim))
         for i in range(self.emb_size):
