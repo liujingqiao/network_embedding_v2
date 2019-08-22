@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 
-from utils import alias_sample, create_alias_table, partition_num
+from utils import alias_sample, create_alias_table
 
 
 class RandomWalker:
@@ -71,7 +71,7 @@ class RandomWalker:
             proceeding.append(pool.apply_async(self._simulate_walks, (start, end, num_walks, walk_length)))
         pool.close()
         pool.join()
-        if type == 1:
+        if self.types == 1:
             corpus = []
             for p in proceeding:
                 corpus.extend(p.get())
@@ -80,7 +80,7 @@ class RandomWalker:
         walk_structure = np.zeros_like(self.G.adj)
         for p in proceeding:
             walk_structure += p.get()
-        walk_structure = np.where(walk_structure>0, 1, 0)
+        walk_structure = np.where(walk_structure > 0, 1, 0)
         return  walk_structure
 
     def _simulate_walks(self, start, end, num_walks, walk_length,):
