@@ -17,7 +17,7 @@ class Evaluate:
 
     def loss(self):
         if not self.name:
-            return self.loss_autoencoder
+            return self.loss_high_order
 
     @staticmethod
     def f1(y_true, y_pred):
@@ -25,14 +25,14 @@ class Evaluate:
         macro_f1 = f1_score(y_true, y_pred, average='macro')
         return micro_f1, macro_f1
 
-    def loss_autoencoder(self, y_true, y_pred):
+    def loss_high_order(self, y_true, y_pred):
         # y_true = tf.reshape(y_true, shape=[-1])
         # y_pred = tf.reshape(y_pred, shape=[-1])
         label_smoothing, eps = 0.01, 0.00001
-        y_true = y_true * (self.beta - label_smoothing) + 0.5 * label_smoothing
+        y_true = y_true * self.beta + label_smoothing
         y_pred = y_pred + eps
-        loss = -tf.reduce_mean(y_true*tf.log(y_pred))
-        loss = binary_crossentropy(y_true,y_pred)
+        # loss = -tf.reduce_mean(y_true*tf.log(y_pred))
+        loss = binary_crossentropy(y_true, y_pred)
         return loss
 
     def recontruction(self, data, adj):

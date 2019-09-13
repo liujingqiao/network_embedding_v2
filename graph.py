@@ -2,9 +2,10 @@ import numpy as np
 
 
 class Graph(dict):
-    def __init__(self, is_directed=False):
+    def __init__(self, is_directed=False, test=None):
         dict.__init__(self)
         self.is_directed = is_directed
+        self.test = test
         self.edges = None
         self.nodes = None
         self.attributes = None
@@ -13,27 +14,56 @@ class Graph(dict):
         self.adj = None
 
     def load_edgelist(self, filename):
-        nodes = []
+        lines, test_lines = [], []
         with open(filename, 'r') as fr:
             for line in fr:
-                line = line.split()
-                # 构建图
-                if line[0] not in self:
-                    self[line[0]] = {}
-                if line[1] not in self:
-                    self[line[1]] = {}
-                self[line[0]][line[1]] = 1
-                if not self.is_directed:
-                    self[line[1]][line[0]] = 1
-                # 保存顶点集合
-                if line[0] not in nodes:
-                    nodes.append(line[0])
-                if line[1] not in nodes:
-                    nodes.append(line[1])
+                lines.append(line)
+        if self.test:
+            np.random.seed(20)
+            np.random.shuffle(lines)
+            test_size = int(len(lines)*(1-self.test))
+            test_lines = lines[:test_size]
+            lines = lines[test_size:]
+
+        nodes = []
+        for line in lines:
+            line = line.split()
+            # 构建图
+            if line[0] not in self:
+                self[line[0]] = {}
+            if line[1] not in self:
+                self[line[1]] = {}
+            self[line[0]][line[1]] = 1
+            if not self.is_directed:
+                self[line[1]][line[0]] = 1
+            # 保存顶点集合
+            if line[0] not in nodes:
+                nodes.append(line[0])
+            if line[1] not in nodes:
+                nodes.append(line[1])
+        for line in test_lines:
+            line = line.split()
+            if line[0] not in nodes:
+                nodes.append(line[0])
+            if line[1] not in nodes:
+                nodes.append(line[1])
+
         self.nodes = nodes
         self._indexed_node()
         self._make_adj_edges()
+        if self.test:
+            self._make_test_edge(test_lines)
         return self
+
+    def _make_test_edge(self, test_lines):
+        test_edge = []
+        for line in test_lines:
+            line = line.split()
+            vi, vj = self.node2idx[line[0]], self.node2idx[line[1]]
+            test_edge.append([vi, vj])
+            if self.is_directed:
+                test_edge.append([vj, vi])
+        self.test_edge = test_edge
 
     def load_classes(self, path):
         classes2idx = {}
@@ -46,6 +76,7 @@ class Graph(dict):
                 classes.append(classes2idx[line[1]])
         types = len(set(classes))
         return np.array(node), np.array(classes), types
+
 
     def _make_adj_edges(self):
         node2idx = self.node2idx
@@ -108,9 +139,11 @@ class Graph(dict):
             self.attributes = node_attr_matrix
             return node_attr_matrix
 
-    def sampled_link(self, num_neg=5):
+    def sampled_link(self, num_neg=5, test=False):
         # 正样本
         links_list = self.edges
+        if test:
+            links_list = self.test_edge
         label = np.ones((len(links_list),1))
         # 负采样
         for i in range(len(self.edges)):
@@ -123,7 +156,7 @@ class Graph(dict):
                 vj = nag[np.random.randint(len(nag))]
                 self.adj[vi][vj] = 1
                 links_list = np.append(links_list, [[vi, vj]], axis=0)
-                label = np.append(label, [[-1]], axis=0)
+                label = np.append(label, [[0]], axis=0)
         shuffle_index = np.random.permutation(np.arange(len(links_list)))
         links_list = links_list[shuffle_index]
         label = label[shuffle_index]
@@ -133,4 +166,5 @@ class Graph(dict):
         if self.adj[vi][vj] == 1:
             return True
         return False
+
 
